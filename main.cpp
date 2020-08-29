@@ -34,36 +34,61 @@ int getKey(int lastKey){
   SetConsoleMode(hstdin, mode);
   return lastKey;
 }
+short wrapAround(short coord, short max){
+  if(coord<1)return max;
+  if(coord>max)return 1;
+  return coord;
+}
 int main(){
+  const char *title = "Orm i konsolen"; 
+  HANDLE hConsole = CreateConsoleScreenBuffer(GENERIC_READ|GENERIC_WRITE, 0, NULL, CONSOLE_TEXTMODE_BUFFER, NULL);
+  SetConsoleActiveScreenBuffer(hConsole);
+  if(SetConsoleTitle(title))SetConsoleTitle(title);
   DWORD written = 1;
-  short x,y = 25;
-  short height, width = 50;
-  short snakeL = 2;
-  short coords[height*width][2];
+  COORD mWindowSize = GetLargestConsoleWindowSize(hConsole);
+  CONSOLE_SCREEN_BUFFER_INFO bufferInfo;
+  GetConsoleScreenBufferInfo(hConsole, &bufferInfo);
+  bool running = true;
+  bool dead = false;
+  short x = 20;
+  short y = 30;
+  short mWidth = mWindowSize.X;
+  short mHeight = mWindowSize.Y;
+  short cWidth = bufferInfo.srWindow.Right - bufferInfo.srWindow.Left +1;
+  short cHeight = bufferInfo.srWindow.Bottom - bufferInfo.srWindow.Top +1;
+  std::cout << mWidth << " " << mHeight << std::endl;
+  std::cout << cWidth << " " << cHeight << std::endl;
+  short snakeL = 3;
+  short coords[mHeight*mWidth][2];
   coords[0][0] = x;
-  coords[0][1] = y;
+  coords[0][1] = y; //startkoordinater för huvudet och en svans
   coords[1][0] = x;
   coords[1][1] = y-1;
-  short oX,oY;
-  const char *title = "Testing"; 
-  const char *head = "*^<v>"; 
-  const char *tail = "-|"; 
+  coords[2][0] = x;
+  coords[2][1] = y-2;
+  const char *head = "*^<v>"; //alla olika huvuden
+  const char *tail = "-|"; //alla olika svansar
   int lastKey = 3;
-  char *input = new char[5];
-  for(int i=0; i<5; i++){
-    if(i%2==0)input[i]='a';
-    else input[i]='b';
-  }
-  for(int i=2;i<height*width;i++){
+  for(int i=2;i<mHeight*mWidth;i++){
     coords[i][0] = 0;
     coords[i][1] = 0;
   }
 
-  HANDLE hConsole = CreateConsoleScreenBuffer(GENERIC_READ|GENERIC_WRITE, 0, NULL, CONSOLE_TEXTMODE_BUFFER, NULL);
-  SetConsoleActiveScreenBuffer(hConsole);
-  if(SetConsoleTitle(title))SetConsoleTitle(title);
-  while(true){
-        WriteConsoleOutputCharacter(hConsole, head+lastKey, 1, {x,y}, &written);
+  while(running){
+    GetConsoleScreenBufferInfo(hConsole, &bufferInfo);
+    short cWidth = bufferInfo.srWindow.Right - bufferInfo.srWindow.Left +1; //kollar nuvarande fönsterstorlek
+    short cHeight = bufferInfo.srWindow.Bottom - bufferInfo.srWindow.Top +1;
+    coords[0][0] = wrapAround(coords[0][0], cWidth);
+    x = coords[0][0];
+    coords[0][1] = wrapAround(coords[0][1], cHeight);
+    y = coords[0][1];
+    for(short i=1;i<snakeL;i++){
+      if(coords[0][0]==coords[i][0] && coords[0][1]==coords[i][1]){
+        running = false;
+        lastKey = 0;
+        }
+      }
+      WriteConsoleOutputCharacter(hConsole, head+lastKey, 1, {x,y}, &written);
       for(int i=1;i<snakeL;i++){
         if(coords[i][0]-coords[i-1][0]==0) WriteConsoleOutputCharacter(hConsole, tail+1, 1, {coords[i][0],coords[i][1]}, &written);//färdats vertikalt
         else WriteConsoleOutputCharacter(hConsole, tail, 1, {coords[i][0],coords[i][1]}, &written);//färdats horisontellt
@@ -75,16 +100,13 @@ int main(){
         case 3: y++; break;
         case 4: x+=2; break;
           }
-      oX = coords[snakeL-1][0];
-      oY = coords[snakeL-1][1];
+      WriteConsoleOutputCharacter(hConsole, " ", 1, {coords[snakeL-1][0],coords[snakeL-1][1]}, &written);
       for(int i=snakeL-1; i>0; i--){
         coords[i][0] = coords[i-1][0];
         coords[i][1] = coords[i-1][1];
         }
       coords[0][0] = x;
       coords[0][1] = y;
-      WriteConsoleOutputCharacter(hConsole, " ", 1, {oX,oY}, &written);
-      std::cout << x << " " << y << std::endl;
-  }
+    }
   return 0;
 }
