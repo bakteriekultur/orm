@@ -13,10 +13,18 @@ int getKey(int lastKey){
       if(kbhit()){
         int button = std::cin.get();
       switch(button){
-        case 119: lastKey = 1; break;
-        case 97: lastKey = 2;break;
-        case 115: lastKey = 3;break;
-        case 100: lastKey = 4;break;
+        case 119:
+          if(lastKey%2 == 0)lastKey = 1;
+          break; //up
+        case 97:
+          if(lastKey%2 == 1)lastKey = 2;
+          break;//left
+        case 115: 
+          if(lastKey%2 == 0)lastKey = 3;
+          break;//down
+        case 100: 
+          if(lastKey%2 == 1)lastKey = 4;
+          break;//right
       }
       }
     }
